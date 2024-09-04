@@ -1,0 +1,11 @@
+CREATE DATABASE ABC_Task2;
+
+\c ABC_Task2;
+
+CREATE TABLE files (
+    file_id SERIAL PRIMARY KEY,
+    file_name VARCHAR(255) NOT NULL,
+    file_path VARCHAR(255) NOT NULL,
+    file_size BIGINT NOT NULL,
+    upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
