@@ -1,14 +1,18 @@
+from flask import Flask, render_template_string
 import psycopg2
 import pandas as pd
-from jinja2 import Template
+
+app = Flask(__name__)
 
 # Database connection
-conn = psycopg2.connect(
-    host="localhost",
-    database="ABC_Task1",
-    user="postgres",
-    password="JustinFields1$"
-)
+def get_db_connection():
+    conn = psycopg2.connect(
+        host="localhost",
+        database="ABC_Task1",
+        user="your_username",
+        password="your_password"
+    )
+    return conn
 
 # SQL Queries
 query1 = """
@@ -60,58 +64,51 @@ ORDER BY
     service_frequency DESC;
 """
 
-# Execute queries and fetch data
-df1 = pd.read_sql_query(query1, conn)
-df2 = pd.read_sql_query(query2, conn)
-df3 = pd.read_sql_query(query3, conn)
+@app.route('/')
+def index():
+    conn = get_db_connection()
+    df1 = pd.read_sql_query(query1, conn)
+    df2 = pd.read_sql_query(query2, conn)
+    df3 = pd.read_sql_query(query3, conn)
+    conn.close()
 
-# Close the connection
-conn.close()
+    html_template = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Service Station Report</title>
+        <style>
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            table, th, td {
+                border: 1px solid black;
+            }
+            th, td {
+                padding: 8px;
+                text-align: left;
+            }
+            th {
+                background-color: #f2f2f2;
+            }
+        </style>
+    </head>
+    <body>
+        <h2>Service Activities</h2>
+        {{ table1 | safe }}
+        <h2>Owners and Their Service History</h2>
+        {{ table2 | safe }}
+        <h2>Vehicle Models and Service Frequency</h2>
+        {{ table3 | safe }}
+    </body>
+    </html>
+    """
 
-# HTML Template
-html_template = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Service Station Report</title>
-    <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        table, th, td {
-            border: 1px solid black;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-    </style>
-</head>
-<body>
-    <h2>Service Activities</h2>
-    {{ table1 }}
-    <h2>Owners and Their Service History</h2>
-    {{ table2 }}
-    <h2>Vehicle Models and Service Frequency</h2>
-    {{ table3 }}
-</body>
-</html>
-"""
+    return render_template_string(html_template,
+                                  table1=df1.to_html(index=False, classes='table'),
+                                  table2=df2.to_html(index=False, classes='table'),
+                                  table3=df3.to_html(index=False, classes='table'))
 
-# Render HTML
-template = Template(html_template)
-html_content = template.render(
-    table1=df1.to_html(index=False, classes='table'),
-    table2=df2.to_html(index=False, classes='table'),
-    table3=df3.to_html(index=False, classes='table')
-)
-
-# Write to HTML file
-with open("finalReport.html", "w") as file:
-    file.write(html_content)
-
-print("Final Report generated successfully!")
+if __name__ == '__main__':
+    app.run(debug=True)
